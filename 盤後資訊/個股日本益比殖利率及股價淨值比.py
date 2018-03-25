@@ -1,16 +1,19 @@
-##----- pe is '0.00' when pe < 0 -----
-
 import pandas as pd
 import numpy as np
 from json import loads as jsonLoadsF
-import sys, os
-sys.path.append(os.getenv('MY_PYTHON_PKG'))
-import syspath
-import craw.crawler_fp1 as crawler
-import craw.craw_tse as craw_tse
 import datetime as dt
-import toolz
+import cytoolz.curried
 import requests
+import os
+import sys
+
+if os.getenv('MY_PYTHON_PKG') not in sys.path:
+    sys.path.append(os.getenv('MY_PYTHON_PKG'))
+import syspath
+
+import craw.crawler as crawler
+import crawler.finance.tse.save as saver
+
 
 s = requests.Session()
 
@@ -22,19 +25,20 @@ def gen_url(type: str, input_date: str) -> str:
 
 @toolz.curry
 def get_plain_text(url: str) -> str:
-    return crawler.session_get_text(s, url)
+    return crawler.session_get_text(s, url, {})
 
 
 def get_dict(date: str) -> dict:
-    return toolz.compose(jsonLoadsF, get_plain_text, gen_url_giventype)(date)
+    return cytoolz.compose(jsonLoadsF, get_plain_text, gen_url_giventype)(date)
 
 
 def gen_url_giventype(input_date: str) -> str:
     return gen_url('ALL', input_date)
 
 
-lastdate = craw_tse.last_datetime('個股日本益比、殖利率及股價淨值比')
+lastdate = saver.last_datetime('個股日本益比、殖利率及股價淨值比')
 
+##----- pe is '0.00' when pe < 0 -----
 
 def craw_priceEarning(date: str) -> pd.DataFrame:
     d = get_dict(date)
@@ -71,18 +75,18 @@ def craw_priceEarning(date: str) -> pd.DataFrame:
 
 
 def save(df: pd.DataFrame) -> None:
-    return craw_tse.saveToSqliteF('個股日本益比、殖利率及股價淨值比', df)
+    saver.lite('個股日本益比、殖利率及股價淨值比', df)
 
 
 def craw_save(date: str) -> None:
-    return crawler.craw_save(craw_priceEarning, save, date)
+    crawler.craw_save(save, craw_priceEarning, date)
 
 
 nPeriods = crawler.input_dates(lastdate, dt.datetime.now())
 
-# generatorG = crawler.looper(craw_save, nPeriods)
-# for _ in generatorG:
-#     pass
-crawler.loop(craw_save, nPeriods)
+generatorG = crawler.looper(craw_save, nPeriods)
+for _ in generatorG:
+    pass
+#crawler.loop(craw_save, nPeriods)
 
 s.close()

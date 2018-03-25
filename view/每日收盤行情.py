@@ -1,17 +1,17 @@
-
-import sys, os
-sys.path.append(os.getenv('MY_PYTHON_PKG'))
-import syspath
-import sqlCommand as sqlc
-import psycopg2
 import pandas as pd
+import psycopg2
+import os
+import sys
+
+if os.getenv('MY_PYTHON_PKG') not in sys.path:
+    sys.path.append(os.getenv('MY_PYTHON_PKG'))
+import syspath
+
+import sqlCommand as sqlc
+from common.connection import conn_local_pg
 
 
-def Conn_pg(db: str) -> sqlc.conn_pg:
-    return psycopg2.connect("host=localhost dbname={} user=postgres password=d03724008".format(db))
-
-
-conn = Conn_pg('tse')
+conn = conn_local_pg('tse')
 cur = conn.cursor()
 
 # ---- view ----
