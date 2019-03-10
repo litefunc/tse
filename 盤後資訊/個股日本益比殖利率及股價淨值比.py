@@ -13,17 +13,18 @@ import syspath
 
 import craw.crawler as crawler
 import crawler.finance.tse.save as saver
-
+from tse.tradingday import adjust
+from tse.tradingday.db import days_lite
 
 s = requests.Session()
 
 
-@toolz.curry
+@cytoolz.curry
 def gen_url(type: str, input_date: str) -> str:
     return 'http://www.twse.com.tw/exchangeReport/BWIBBU_d?response=json&date={}&selectType={}'.format(input_date, type)
 
 
-@toolz.curry
+@cytoolz.curry
 def get_plain_text(url: str) -> str:
     return crawler.session_get_text(s, url, {})
 
@@ -36,7 +37,7 @@ def gen_url_giventype(input_date: str) -> str:
     return gen_url('ALL', input_date)
 
 
-lastdate = saver.last_datetime('個股日本益比、殖利率及股價淨值比')
+# lastdate = saver.last_datetime('個股日本益比、殖利率及股價淨值比')
 
 ##----- pe is '0.00' when pe < 0 -----
 
@@ -82,7 +83,13 @@ def craw_save(date: str) -> None:
     crawler.craw_save(save, craw_priceEarning, date)
 
 
-nPeriods = crawler.input_dates(lastdate, dt.datetime.now())
+table = '個股日本益比、殖利率及股價淨值比'
+lastdate = crawler.dt_to_str([saver.last_datetime(table)])
+firstday = dt.datetime(2005, 9, 2)
+days_db = days_lite(table)
+nPeriods = lastdate + crawler.dt_to_str(adjust.days_trade(firstday) - days_db)
+
+# nPeriods = crawler.input_dates(lastdate, dt.datetime.now())
 
 generatorG = crawler.looper(craw_save, nPeriods)
 for _ in generatorG:

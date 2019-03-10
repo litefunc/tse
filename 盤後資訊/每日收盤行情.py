@@ -6,17 +6,25 @@ from json import loads as jsonLoadsF
 from typing import Generator
 import cytoolz.curried
 import datetime as dt
-
+from typing import Set
 import os
 import sys
 if os.getenv('MY_PYTHON_PKG') not in sys.path:
     sys.path.append(os.getenv('MY_PYTHON_PKG'))
 import syspath
 
+import sqlCommand as sqlc
 import craw.crawler as crawler
 import crawler.finance.tse.save as saver
 import astype as ast
 
+from pymongo import MongoClient
+client = MongoClient('localhost', 27018, username='mongo', password='maxpower')
+db = client['tse']
+from tse.tradingday import adjust
+from tse.tradingday.db import days_lite
+
+#adjust.abnormal
 
 s = requests.Session()
 
@@ -61,25 +69,78 @@ def crawler_close(table: str) -> Generator:
     def craw_save(date: str) -> None:
         crawler.craw_save(save, craw, date)
 
-    lastdate = saver.last_datetime(table)
-    nPeriods = crawler.input_dates(lastdate, dt.datetime.now())
+    lastdate = crawler.dt_to_str([saver.last_datetime(table)])
+    firstday = dt.datetime(2004, 2, 11)
+    days_db = days_lite(table)
+    nPeriods = lastdate + crawler.dt_to_str(adjust.days_trade(firstday) - days_db)
     return crawler.looper(craw_save, nPeriods)
+
+#def crawler_close(table: str) -> Generator:
+#    def craw(date: str) -> pd.DataFrame:
+#        d = get_dict(date)
+#        if 'stat' in d and d['stat'] == '很抱歉，沒有符合條件的資料!':
+#            raise crawler.NoData('很抱歉，沒有符合條件的資料!')
+#        data = d['data5']
+#        fields = d['fields5']
+#        date = d['date'][0:4] + '-' + d['date'][4:6] + '-' + d['date'][6:]
+#        df = pd.DataFrame(data, columns=fields).replace(',', '', regex=True).replace('--', np.nan).replace('', np.nan)
+#        df['漲跌(+/-)'] = df['漲跌(+/-)'].replace('<p style= color:red>+</p>', 1).replace('<p style= color:green>-</p>', -1).replace('X', 0).replace(' ', 0)
+#        df.insert(0, '年月日', date)
+#        df['年月日'] = pd.to_datetime(df['年月日']).astype(str)
+#        floatColumns = ['成交股數', '成交筆數', '成交金額', '開盤價', '最高價', '最低價', '收盤價', '漲跌(+/-)', '漲跌價差', '最後揭示買價', '最後揭示買量', '最後揭示賣價', '最後揭示賣量', '本益比']
+#        df = ast.to_float(floatColumns, df)
+#        return df
+#
+#    def save(df: pd.DataFrame) -> None:
+#        saver.lite(table, df)
+#
+#    def craw_save(date: str) -> None:
+#        crawler.craw_save(save, craw, date)
+#
+#    lastdate = saver.last_datetime(table)
+#    nPeriods = crawler.input_dates(lastdate, dt.datetime.now())
+#    return crawler.looper(craw_save, nPeriods)
 
 for _ in crawler_close('每日收盤行情(全部(不含權證、牛熊證))'):
     pass
 
 ###----大盤統計資訊----
 
+#def crawler_market(table: str) -> Generator:
+#    def craw(date: str) -> pd.DataFrame:
+#        d = get_dict(date)
+#        if 'stat' in d and d['stat'] == '很抱歉，沒有符合條件的資料!':
+#            raise crawler.NoData('很抱歉，沒有符合條件的資料!')
+#        
+#        collection = db[table]
+#        print(collection.insert_one(d).inserted_id)
+#        
+#        return None
+#
+#    def save(df: pd.DataFrame) -> None:
+#        pass
+#
+#    def craw_save(date: str) -> None:
+#        crawler.craw_save(save, craw, date)
+#
+#    lastdate = crawler.dt_to_str([saver.last_datetime(table)])
+#    firstday = dt.datetime(2009, 1, 5)
+#    days_db = days_lite(table)
+#    nPeriods = lastdate + crawler.dt_to_str(adjust.days_trade(firstday) - days_db)
+#
+#    return crawler.looper(craw_save, nPeriods)
+
 def crawler_market(table: str) -> Generator:
     def craw(date: str) -> pd.DataFrame:
         d = get_dict(date)
         if 'stat' in d and d['stat'] == '很抱歉，沒有符合條件的資料!':
             raise crawler.NoData('很抱歉，沒有符合條件的資料!')
+           
         data = d['data1']
         fields = d['fields1']
         date = d['date'][0:4] + '-' + d['date'][4:6] + '-' + d['date'][6:]
         df = pd.DataFrame(data, columns=fields).replace(',', '', regex=True).replace('--', np.nan).replace('---', np.nan)
-        df['漲跌(+/-)'] = df['漲跌(+/-)'].replace("<p style ='color:red'>+</p>", 1).replace("<p style ='color:green'>-</p>", -1).replace('X', 0).replace(' ', 0)
+        df['漲跌(+/-)'] = df['漲跌(+/-)'].replace("<p style ='color:red'>+</p>", 1).replace("<p style ='color:green'>-</p>", -1).replace('X', 0).replace(' ', 0).replace('', np.nan)
         df.insert(0, '年月日', date)
         df['年月日'] = pd.to_datetime(df['年月日']).astype(str)
         floatColumns = ['收盤指數', '漲跌(+/-)', '漲跌點數', '漲跌百分比(%)']
@@ -92,8 +153,13 @@ def crawler_market(table: str) -> Generator:
     def craw_save(date: str) -> None:
         crawler.craw_save(save, craw, date)
 
-    lastdate = saver.last_datetime(table)
-    nPeriods = crawler.input_dates(lastdate, dt.datetime.now())
+    lastdate = crawler.dt_to_str([saver.last_datetime(table)])
+    firstday = dt.datetime(2009, 1, 5)
+    days_db = days_lite(table)
+    nPeriods = lastdate + crawler.dt_to_str(adjust.days_trade(firstday) - days_db)
+
+    # lastdate = saver.last_datetime(table)
+    # nPeriods = crawler.input_dates(lastdate, dt.datetime.now())
     return crawler.looper(craw_save, nPeriods)
 
 for _ in crawler_market('大盤統計資訊'):
@@ -124,8 +190,13 @@ def crawler_marketReturn(table: str) -> Generator:
     def craw_save(date: str) -> None:
         crawler.craw_save(save, craw, date)
 
-    lastdate = saver.last_datetime(table)
-    nPeriods = crawler.input_dates(lastdate, dt.datetime.now())
+    lastdate = crawler.dt_to_str([saver.last_datetime(table)])
+    firstday = dt.datetime(2009, 1, 5)
+    days_db = days_lite(table)
+    nPeriods = lastdate + crawler.dt_to_str(adjust.days_trade(firstday) - days_db)
+
+    # lastdate = saver.last_datetime(table)
+    # nPeriods = crawler.input_dates(lastdate, dt.datetime.now())
     return crawler.looper(craw_save, nPeriods)
 
 for _ in crawler_marketReturn('大盤統計資訊'):
@@ -154,8 +225,13 @@ def crawler_composite(table: str) -> Generator:
     def craw_save(date: str) -> None:
         crawler.craw_save(save, craw, date)
 
-    lastdate = saver.last_datetime(table)
-    nPeriods = crawler.input_dates(lastdate, dt.datetime.now())
+    lastdate = crawler.dt_to_str([saver.last_datetime(table)])
+    firstday = dt.datetime(2004, 2, 11)
+    days_db = days_lite(table)
+    nPeriods = lastdate + crawler.dt_to_str(adjust.days_trade(firstday) - days_db)
+
+    # lastdate = saver.last_datetime(table)
+    # nPeriods = crawler.input_dates(lastdate, dt.datetime.now())
     return crawler.looper(craw_save, nPeriods)
 
 for _ in crawler_composite('大盤成交統計'):
@@ -195,8 +271,13 @@ def crawler_upsAndDown(table: str) -> Generator:
     def craw_save(date: str) -> None:
         crawler.craw_save(save, craw, date)
 
-    lastdate = saver.last_datetime(table)
-    nPeriods = crawler.input_dates(lastdate, dt.datetime.now())
+    lastdate = crawler.dt_to_str([saver.last_datetime(table)])
+    firstday = dt.datetime(2011, 8, 1)
+    days_db = days_lite(table)
+    nPeriods = lastdate + crawler.dt_to_str(adjust.days_trade(firstday) - days_db)
+
+    # lastdate = saver.last_datetime(table)
+    # nPeriods = crawler.input_dates(lastdate, dt.datetime.now())
     return crawler.looper(craw_save, nPeriods)
 
 for _ in crawler_upsAndDown('漲跌證券數合計'):
@@ -222,7 +303,7 @@ def crawler_callableBull(table: str) -> Generator:
         df.insert(0, '年月日', date)
         df['年月日'] = pd.to_datetime(df['年月日']).astype(str)
         df['漲跌(+/-)'] = df['漲跌(+/-)'].replace("<p style= color:red>+</p>", 1).replace("<p style= color:green>-</p>",-1).replace('X', 0).replace(' ', 0)
-        df['牛熊證觸及限制價格'] = df['牛熊證觸及限制價格'].replace('', np.nan).fillna(np.nan)
+        df['牛熊證觸及限制價格'] = df['牛熊證觸及限制價格'].replace('＊', 1).replace('', 0).fillna(0)
         df['本益比'] = df['本益比'].replace('', np.nan).fillna(np.nan)
         intColumns = ['成交股數', '成交筆數', '最後揭示買量', '最後揭示賣量']
         floatColumns = ['成交金額', '開盤價', '最高價', '最低價', '收盤價', '漲跌(+/-)', '漲跌價差', '最後揭示買價', '最後揭示賣價', '本益比', '牛熊證觸及限制價格', '標的證券收盤價/指數']
@@ -236,8 +317,13 @@ def crawler_callableBull(table: str) -> Generator:
     def craw_save(date: str) -> None:
         crawler.craw_save(save, craw, date)
 
-    lastdate = saver.last_datetime(table)
-    nPeriods = crawler.input_dates(lastdate, dt.datetime.now())
+    lastdate = crawler.dt_to_str([saver.last_datetime(table)])
+    firstday = dt.datetime(2011, 7, 8)
+    days_db = days_lite(table)
+    nPeriods = lastdate + crawler.dt_to_str(adjust.days_trade(firstday) - days_db)
+
+    # lastdate = saver.last_datetime(table)
+    # nPeriods = crawler.input_dates(lastdate, dt.datetime.now())
     return crawler.looper(craw_save, nPeriods)
 
 for _ in crawler_callableBull('牛證(不含可展延牛證)'):
@@ -263,7 +349,7 @@ def crawler_callableBear(table: str) -> Generator:
         df.insert(0, '年月日', date)
         df['年月日'] = pd.to_datetime(df['年月日']).astype(str)
         df['漲跌(+/-)'] = df['漲跌(+/-)'].replace("<p style= color:red>+</p>", 1).replace("<p style= color:green>-</p>",-1).replace('X', 0).replace(' ', 0)
-        df['牛熊證觸及限制價格'] = df['牛熊證觸及限制價格'].replace('', np.nan).fillna(np.nan)
+        df['牛熊證觸及限制價格'] = df['牛熊證觸及限制價格'].replace('＊', 1).replace('', 0).fillna(0)
         df['本益比'] = df['本益比'].replace('', np.nan).fillna(np.nan)
         intColumns = ['成交股數', '成交筆數', '最後揭示買量', '最後揭示賣量']
         floatColumns = ['成交金額', '開盤價', '最高價', '最低價', '收盤價', '漲跌(+/-)', '漲跌價差', '最後揭示買價', '最後揭示賣價', '本益比', '牛熊證觸及限制價格', '標的證券收盤價/指數']
@@ -277,8 +363,13 @@ def crawler_callableBear(table: str) -> Generator:
     def craw_save(date: str) -> None:
         crawler.craw_save(save, craw, date)
 
-    lastdate = saver.last_datetime(table)
-    nPeriods = crawler.input_dates(lastdate, dt.datetime.now())
+    lastdate = crawler.dt_to_str([saver.last_datetime(table)])
+    firstday = dt.datetime(2011, 7, 8)
+    days_db = days_lite(table)
+    nPeriods = lastdate + crawler.dt_to_str(adjust.days_trade(firstday) - days_db)
+
+    # lastdate = saver.last_datetime(table)
+    # nPeriods = crawler.input_dates(lastdate, dt.datetime.now())
     return crawler.looper(craw_save, nPeriods)
 
 for _ in crawler_callableBear('熊證(不含可展延熊證)'):
@@ -309,6 +400,8 @@ def crawler_extendedCallableBear(table: str) -> Generator:
         intColumns = ['成交股數', '成交筆數', '最後揭示買量', '最後揭示賣量']
         floatColumns = ['成交金額', '開盤價', '最高價', '最低價', '收盤價', '漲跌(+/-)', '漲跌價差', '最後揭示買價', '最後揭示賣價', '本益比', '牛熊證觸及限制價格',
                         '標的證券收盤價/指數']
+        floatColumns = [col for col in floatColumns if col in list(df)]
+        df[intColumns + floatColumns] = df[intColumns + floatColumns].replace('', 0).fillna(np.nan)
         df = ast.to_int(intColumns, df)
         df = ast.to_float(floatColumns, df)
         return df
@@ -319,8 +412,13 @@ def crawler_extendedCallableBear(table: str) -> Generator:
     def craw_save(date: str) -> None:
         crawler.craw_save(save, craw, date)
 
-    lastdate = saver.last_datetime(table)
-    nPeriods = crawler.input_dates(lastdate, dt.datetime.now())
+    lastdate = crawler.dt_to_str([saver.last_datetime(table)])
+    firstday = dt.datetime(2014, 7, 31)
+    days_db = days_lite(table)
+    nPeriods = lastdate + crawler.dt_to_str(adjust.days_trade(firstday) - days_db)
+
+    # lastdate = saver.last_datetime(table)
+    # nPeriods = crawler.input_dates(lastdate, dt.datetime.now())
     return crawler.looper(craw_save, nPeriods)
 
 for _ in crawler_extendedCallableBear('可展延牛證'):

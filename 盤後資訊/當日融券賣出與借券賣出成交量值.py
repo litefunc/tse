@@ -13,17 +13,18 @@ import syspath
 
 import craw.crawler as crawler
 import crawler.finance.tse.save as saver
-
+from tse.tradingday import adjust
+from tse.tradingday.db import days_lite
 
 s = requests.Session()
 
 
-@toolz.curry
+@cytoolz.curry
 def gen_url(input_date: str) -> str:
     return 'http://www.twse.com.tw/exchangeReport/TWTASU?response=json&date={}'.format(input_date, type)
 
 
-@toolz.curry
+@cytoolz.curry
 def get_plain_text(url: str) -> str:
     return crawler.session_get_text(s, url, {})
 
@@ -32,7 +33,7 @@ def get_dict(date: str) -> dict:
     return cytoolz.compose(jsonLoadsF, get_plain_text, gen_url)(date)
 
 
-lastdate = saver.last_datetime('當日融券賣出與借券賣出成交量值(元)')
+# lastdate = saver.last_datetime('當日融券賣出與借券賣出成交量值(元)')
 
 
 def craw_margin(date: str) -> pd.DataFrame:
@@ -63,7 +64,13 @@ def craw_save(date: str) -> None:
     crawler.craw_save(save, craw_margin, date)
 
 
-nPeriods = crawler.input_dates(lastdate, dt.datetime.now())
+table = '當日融券賣出與借券賣出成交量值(元)'
+lastdate = crawler.dt_to_str([saver.last_datetime(table)])
+firstday = dt.datetime(2008, 9, 26)
+days_db = days_lite(table)
+nPeriods = lastdate + crawler.dt_to_str(adjust.days_trade(firstday) - days_db)
+
+# nPeriods = crawler.input_dates(lastdate, dt.datetime.now())
 
 generatorG = crawler.looper(craw_save, nPeriods)
 for _ in generatorG:

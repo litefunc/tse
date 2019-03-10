@@ -13,11 +13,12 @@ import syspath
 
 import craw.crawler as crawler
 import crawler.finance.tse.save as saver
-
+from tse.tradingday import adjust
+from tse.tradingday.db import days_lite
 
 s = requests.Session()
 
-@toolz.curry
+@cytoolz.curry
 def gen_url(type: str, input_date: str) -> str:
     return 'http://www.twse.com.tw/fund/T86?response=json&date={}&selectType={}'.format(input_date, type)
 
@@ -39,7 +40,7 @@ def gen_url_giventype(input_date: str) -> str:
 #
 #
 # urlF_givenType = partial(urlF, 'ALL')
-lastdate = saver.last_datetime('三大法人買賣超日報')
+#lastdate = saver.last_datetime('三大法人買賣超日報')
 # inputDateF = partial(crawler.inputDateF, lastdate)
 # getDictF = fp.compose(jsonLoadsF, crawler.getPlainTextF, urlF_givenType, inputDateF)
 
@@ -80,7 +81,13 @@ def craw_save(date: str) -> None:
 # save = partial(craw_tse.saveToSqliteF, '三大法人買賣超日報')
 # crawAndSaveF = partial(crawler.crawAndSaveF, craw_institutional, save)
 
-nPeriods = crawler.input_dates(lastdate, dt.datetime.now())
+table = '三大法人買賣超日報'
+lastdate = crawler.dt_to_str([saver.last_datetime(table)])
+firstday = dt.datetime(2012, 5, 2)
+days_db = days_lite(table)
+nPeriods = lastdate + crawler.dt_to_str(adjust.days_trade(firstday) - days_db)
+
+#nPeriods = crawler.input_dates(lastdate, dt.datetime.now())
 # nPeriods = crawler.timeDeltaF(lastdate).days
 
 generatorG = crawler.looper(craw_save, nPeriods)
