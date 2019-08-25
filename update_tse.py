@@ -13,7 +13,6 @@
 # 當日融券賣出與借券賣出成交量值(元)
 # 鉅額交易日成交資訊
 
-from update import *
 import syspath
 import os
 import sys
@@ -23,14 +22,16 @@ if os.getenv('MY_PYTHON_PKG') not in sys.path:
 MY_PYTHON_PROJECT = os.getenv('MY_PYTHON_PROJECT')
 syspath.append_if_not_exist(f'{MY_PYTHON_PROJECT}/crawler/finance/tse')
 
-# import 盤後資訊.每日收盤行情1
-# import 盤後資訊.個股日本益比殖利率及股價淨值比
-# import 三大法人.三大法人買賣超日報
-# import 盤後資訊.當日融券賣出與借券賣出成交量值
-# import 鉅額交易.鉅額交易日成交資訊
+import 盤後資訊.每日收盤行情1
+import 盤後資訊.個股日本益比殖利率及股價淨值比
+import 三大法人.三大法人買賣超日報
+import 盤後資訊.當日融券賣出與借券賣出成交量值
+import 鉅額交易.鉅額交易日成交資訊
 
-# import crawler.finance.tse.mongoToLite.每日收盤行情
-# import crawler.finance.tse.mongoToLite.鉅額交易日成交資訊
+import crawler.finance.tse.mongoToLite.每日收盤行情
+import crawler.finance.tse.mongoToLite.鉅額交易日成交資訊
 
 syspath.append_if_not_exist(
     f'{MY_PYTHON_PROJECT}/crawler/finance/sqliteToPostgres')
+
+from update import *
