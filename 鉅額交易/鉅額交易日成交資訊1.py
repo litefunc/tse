@@ -5,10 +5,6 @@ import requests
 import cytoolz.curried
 import os
 import sys
-
-if os.getenv('MY_PYTHON_PKG') not in sys.path:
-    sys.path.append(os.getenv('MY_PYTHON_PKG'))
-
 import craw.crawler as crawler
 import crawler.finance.tse.save as saver
 from tse.tradingday import adjust
@@ -43,12 +39,12 @@ def gen_url_giventype(input_date: str) -> str:
     return gen_url('S', input_date)
 
 
-###----鉅額交易日成交資訊----
+# ----鉅額交易日成交資訊----
 
 #!!! not everyday day has huge deal, most of day there are no data
 
 def craw_hugeDeal(coll) -> Generator:
-    table ='鉅額交易日成交資訊'
+    table = '鉅額交易日成交資訊'
 
     def craw(date: str) -> dict:
         return get_dict(date)
@@ -62,9 +58,11 @@ def craw_hugeDeal(coll) -> Generator:
     firstday = dt.datetime(2005, 4, 4)
     lastdate = crawler.dt_to_str([saver.last_datetime(table)])
     days_db = days_lite(table)
-    nPeriods = lastdate + crawler.dt_to_str(adjust.days_trade(firstday) - days_db)
+    nPeriods = lastdate + \
+        crawler.dt_to_str(adjust.days_trade(firstday) - days_db)
     print('nPeriods', nPeriods)
-    dates = [t.replace('-', '') for t in nPeriods if coll.find_one({"date": t}) == None]
+    dates = [t.replace('-', '')
+             for t in nPeriods if coll.find_one({"date": t}) == None]
     print('dates', dates)
     return crawler.looper(craw_save, dates)
 
@@ -76,4 +74,20 @@ s.close()
 
 #[t.replace('-', '') for t in nPeriods if coll.find_one({"date": t}) == None]
 #coll.find_one({"date": nPeriods[-1]})
-#len(nPeriods)
+# len(nPeriods)
+
+# craw('20050513')
+# craw('20050517')
+# craw('20050513')
+
+# for date in dates:
+#     print(date)
+#     craw(date)
+# coll.find_one({"date": '20050429'}) == None
+# g = craw_hugeDeal(coll)
+# next(g)
+
+
+# for t in nPeriods:
+#     if coll.find_one({"date": t}) == None:
+#         print(t)
