@@ -1,17 +1,18 @@
+import sys
+import os
+import syspath
+import crawler.finance.tse.save as saver
+import crawler.finance.tse.mongoToLite.transform.每日收盤行情 as daily
+import craw.crawler as crawler
+from crawler.finance.tse.tradingday import adjust
+from crawler.finance.tse.tradingday.db import days_lite
 from pymongo import MongoClient
 import pymongo
 import datetime as dt
 import time
-from tse.tradingday.db import days_lite
-from tse.tradingday import adjust
-import craw.crawler as crawler
-import crawler.finance.tse.mongoToLite.transform.每日收盤行情 as daily
-import crawler.finance.tse.save as saver
-import syspath
-import os
-import sys
 if os.getenv('MY_PYTHON_PKG') not in sys.path:
     sys.path.append(os.getenv('MY_PYTHON_PKG'))
+
 port = int(os.getenv('MONGO_DOCKER_PORT'))
 user = os.getenv('MONGO_DOCKER_USER')
 pwd = os.getenv('MONGO_DOCKER_PWD')
