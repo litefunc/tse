@@ -17,11 +17,12 @@ def close(date: str, fields: List[str], data: List[List[str]]) -> None:
     df = pd.DataFrame(data, columns=fields).replace(
         ',', '', regex=True).replace('--', np.nan).replace('', np.nan)
     df['漲跌(+/-)'] = df['漲跌(+/-)'].replace('<p style= color:red>+</p>',
-                                          1).replace('<p style= color:green>-</p>', -1).replace('X', 0).replace(' ', 0)
+                                          1).replace('<p style= color:green>-</p>', -1).replace('X', 0).replace(' ', 0).replace('<p> </p>', 0).replace('<p>X</p>', np.nan)
     df.insert(0, '年月日', date)
     df['年月日'] = pd.to_datetime(df['年月日']).astype(str)
     floatColumns = ['成交股數', '成交筆數', '成交金額', '開盤價', '最高價', '最低價', '收盤價',
                     '漲跌(+/-)', '漲跌價差', '最後揭示買價', '最後揭示買量', '最後揭示賣價', '最後揭示賣量', '本益比']
+
     df = ast.to_float(floatColumns, df)
 
     saver.lite('每日收盤行情(全部(不含權證、牛熊證))', df)
@@ -108,7 +109,7 @@ def callableBull(date: str, fields: List[str], data: List[List[str]]) -> None:
     df.insert(0, '年月日', date)
     df['年月日'] = pd.to_datetime(df['年月日']).astype(str)
     df['漲跌(+/-)'] = df['漲跌(+/-)'].replace("<p style= color:red>+</p>",
-                                          1).replace("<p style= color:green>-</p>", -1).replace('X', 0).replace(' ', 0)
+                                          1).replace("<p style= color:green>-</p>", -1).replace('X', 0).replace(' ', 0).replace('<p> </p>', 0).replace('<p>X</p>', np.nan)
     df['牛熊證觸及限制價格'] = df['牛熊證觸及限制價格'].replace('＊', 1).replace('', 0).fillna(0)
     df['本益比'] = df['本益比'].replace('', np.nan).fillna(np.nan)
     intColumns = ['成交股數', '成交筆數', '最後揭示買量', '最後揭示賣量']
@@ -129,7 +130,7 @@ def callableBear(date: str, fields: List[str], data: List[List[str]]) -> None:
     df.insert(0, '年月日', date)
     df['年月日'] = pd.to_datetime(df['年月日']).astype(str)
     df['漲跌(+/-)'] = df['漲跌(+/-)'].replace("<p style= color:red>+</p>",
-                                          1).replace("<p style= color:green>-</p>", -1).replace('X', 0).replace(' ', 0)
+                                          1).replace("<p style= color:green>-</p>", -1).replace('X', 0).replace(' ', 0).replace('<p> </p>', 0).replace('<p>X</p>', np.nan)
     df['牛熊證觸及限制價格'] = df['牛熊證觸及限制價格'].replace('＊', 1).replace('', 0).fillna(0)
     df['本益比'] = df['本益比'].replace('', np.nan).fillna(np.nan)
     intColumns = ['成交股數', '成交筆數', '最後揭示買量', '最後揭示賣量']
@@ -150,7 +151,7 @@ def extendedCallableBear(date: str, fields: List[str], data: List[List[str]]) ->
     df.insert(0, '年月日', date)
     df['年月日'] = pd.to_datetime(df['年月日']).astype(str)
     df['漲跌(+/-)'] = df['漲跌(+/-)'].replace("<p style= color:red>+</p>",
-                                          1).replace("<p style= color:green>-</p>", -1).replace('X', np.nan).replace(' ', 0)
+                                          1).replace("<p style= color:green>-</p>", -1).replace('X', np.nan).replace(' ', 0).replace('<p> </p>', 0).replace('<p>X</p>', np.nan)
     df['牛熊證觸及限制價格'] = df['牛熊證觸及限制價格'].replace(
         '', 0).replace('＊', 1).replace('*', 1).fillna(np.nan)
     df['本益比'] = df['本益比'].replace('', np.nan).fillna(np.nan)
