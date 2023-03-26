@@ -42,8 +42,21 @@ def craw_margin(date: str) -> pd.DataFrame:
         raise crawler.NoData('很抱歉，沒有符合條件的資料!')
     data = d['data']
     fields = d['fields']
+    if fields[1] == '數量':
+        fields[1] = '融券賣出成交數量'
+
+    if fields[2] == '金額':
+        fields[2] = '融券賣出成交金額'
+
+    if fields[3] == '數量':
+        fields[3] = '借券賣出成交數量'
+
+    if fields[4] == '金額':
+        fields[4] = '借券賣出成交金額'
+
     date = d['date'][0:4] + '-' + d['date'][4:6] + '-' + d['date'][6:]
-    df = pd.DataFrame(data, columns=fields).replace(',', '', regex=True).replace('--', np.nan).replace('-', np.nan)
+    df = pd.DataFrame(data, columns=fields).replace(
+        ',', '', regex=True).replace('--', np.nan).replace('-', np.nan)
     df = df[df.證券名稱 != '合計']
     df.insert(0, '證券代號', df['證券名稱'].str.split().str[0].str.strip())
     df['證券名稱'] = df['證券名稱'].str.split().str[1].str.strip()
