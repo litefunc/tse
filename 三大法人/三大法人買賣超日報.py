@@ -18,9 +18,10 @@ from tse.tradingday.db import days_lite
 
 s = requests.Session()
 
+
 @cytoolz.curry
 def gen_url(type: str, input_date: str) -> str:
-    return 'http://www.twse.com.tw/fund/T86?response=json&date={}&selectType={}'.format(input_date, type)
+    return 'https://www.twse.com.tw/rwd/zh/fund/T86?response=json&date={}&selectType={}'.format(input_date, type)
 
 
 def get_plain_text(url: str) -> str:
