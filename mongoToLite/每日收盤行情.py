@@ -78,6 +78,8 @@ def mgo_market(coll) -> None:
                         daily.market(date, doc[field], doc[data])
         else:
             for i in range(0, 9):
+                if 'fields' not in doc['tables'][i]:
+                    continue
                 if doc['tables'][i]['fields'] == fields:
                     print(date, table)
                     daily.market(date, fields, doc['tables'][i]['data'])                        
@@ -107,6 +109,8 @@ def mgo_marketReturn(coll) -> None:
                         daily.marketReturn(date, doc[field], doc[data])
         else:
             for i in range(0, 9):
+                if 'fields' not in doc['tables'][i]:
+                    continue
                 if doc['tables'][i]['fields'] == fields:
                     print(date, table)
                     daily.marketReturn(date, fields, doc['tables'][i]['data'])                             
@@ -136,6 +140,8 @@ def mgo_composite(coll) -> None:
                         daily.composite(date, doc[field], doc[data])
         else:
             for i in range(0, 9):
+                if 'fields' not in doc['tables'][i]:
+                    continue                
                 if doc['tables'][i]['fields'] == fields:
                     print(date, table)
                     daily.composite(date, fields, doc['tables'][i]['data'])      
@@ -165,6 +171,8 @@ def mgo_upsAndDown(coll) -> None:
                         daily.upsAndDown(date, doc[field], doc[data])
         else:
             for i in range(0, 9):
+                if 'fields' not in doc['tables'][i]:
+                    continue                
                 if doc['tables'][i]['fields'] == fields:
                     print(date, table)
                     daily.upsAndDown(date, fields, doc['tables'][i]['data'])                             
